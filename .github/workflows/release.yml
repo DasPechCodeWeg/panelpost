@@ -89,6 +89,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
+          # Only the binaries: the Docker build also stores a build record.
+          pattern: bin-*
           path: dist
           merge-multiple: true
       - name: Checksums
