@@ -1,0 +1,26 @@
+{{define "content"}}
+<div class="pagehead"><div><h1>Settings</h1></div></div>
+{{template "tabs" .}}
+{{$b := .Data.B}}{{$lim := .License.Limits}}
+{{if not $lim.Branding}}<div class="callout"><strong>Your logo, colours and footer are a Pro feature.</strong> In the Community edition reports carry a small “Generated with Panelpost” footer.
+  <a href="{{pricingURL}}" target="_blank" rel="noopener">Upgrade</a> to send fully branded reports.</div>{{end}}
+<form method="post" action="/settings/branding" class="card" enctype="multipart/form-data">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <div class="section"><div class="grid2">
+    <div class="field"><label for="company">Company name</label><input id="company" name="company" type="text" value="{{$b.CompanyName}}" placeholder="Northwind Managed IT">
+      <p class="hint">Shown on the cover and in page headers.</p></div>
+    <div class="field {{if not $lim.Branding}}locked{{end}}"><label for="accent">Accent colour <span class="pro">Pro</span></label>
+      <input id="accent" name="accent" type="text" value="{{$b.AccentColor}}" placeholder="#1f6feb" class="mono"></div>
+    <div class="field {{if not $lim.Branding}}locked{{end}}"><label for="logo">Logo <span class="pro">Pro</span></label>
+      <select id="logo" name="logo"><option value="">No logo</option>{{range .Data.Assets}}<option {{if eq . $b.LogoAsset}}selected{{end}}>{{.}}</option>{{end}}</select>
+      <input name="upload" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp">
+      <p class="hint">PNG, JPEG, WebP or SVG up to 1 MB. A wide logo on a transparent background works best.</p>
+      {{if $b.LogoAsset}}<img class="logo-preview" src="/assets/{{$b.LogoAsset}}" alt="Current logo">{{end}}</div>
+    <div class="field {{if not $lim.Branding}}locked{{end}}"><label for="footer">Footer text <span class="pro">Pro</span></label>
+      <input id="footer" name="footer" type="text" maxlength="200" value="{{$b.FooterText}}" placeholder="Confidential · Northwind Managed IT"></div>
+    <div class="field full"><label for="intro">Default cover text <span class="opt">optional</span></label>
+      <textarea id="intro" name="intro" rows="3" class="prose" placeholder="This report summarises the availability and performance of your services.">{{$b.Intro}}</textarea></div>
+  </div></div>
+  <div class="formbar"><span></span><button class="btn primary" type="submit">Save branding</button></div>
+</form>
+{{end}}

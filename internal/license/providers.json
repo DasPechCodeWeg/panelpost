@@ -1,0 +1,11 @@
+{
+  "_comment": "Public identifiers of the vendor's merchant-of-record products. Fill these in after creating the products; they are not secrets.",
+  "polar": {
+    "organization_id": "",
+    "benefits": {}
+  },
+  "lemonsqueezy": {
+    "store_id": 0,
+    "variants": {}
+  }
+}

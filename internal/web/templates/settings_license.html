@@ -1,0 +1,50 @@
+{{define "content"}}
+<div class="pagehead"><div><h1>Settings</h1></div></div>
+{{template "tabs" .}}
+{{$l := .Data.L}}
+<div class="card"><div class="body">
+  <h2>Panelpost {{$l.Tier.Title}}</h2>
+  <dl class="kv">
+    {{if $l.Licensee}}<dt>Licensed to</dt><dd>{{$l.Licensee}}{{if $l.Email}} · {{$l.Email}}{{end}}</dd>{{end}}
+    {{if .Data.Masked}}<dt>Key</dt><dd class="mono">{{.Data.Masked}}</dd>{{end}}
+    {{if $l.Source}}<dt>Issued by</dt><dd>{{$l.Source}}</dd>{{end}}
+    {{if not $l.ExpiresAt.IsZero}}<dt>Valid until</dt><dd>{{dt $l.ExpiresAt}}</dd>{{end}}
+    {{if not $l.ValidatedAt.IsZero}}<dt>Last checked</dt><dd>{{since $l.ValidatedAt}}</dd>{{end}}
+  </dl>
+  {{if not $l.Paid}}<p class="hint">You are using the free Community edition: up to 3 reports and one Grafana connection, with a small Panelpost credit in each PDF.</p>{{end}}
+  <form method="post" action="/settings/license" class="row">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <input class="grow mono" name="key" type="text" placeholder="Paste your license key" autocomplete="off" required>
+    <button class="btn primary" type="submit">Activate</button>
+  </form>
+  <div class="row">
+    {{if .Data.Masked}}
+    <form class="inline" method="post" action="/settings/license/refresh"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="btn small" type="submit">Check now</button></form>
+    <form class="inline" method="post" action="/settings/license/remove" data-confirm="Remove the license from this installation?"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="btn small danger" type="submit">Remove key</button></form>
+    {{end}}
+    <a class="btn small" href="{{pricingURL}}" target="_blank" rel="noopener">Buy or manage a license</a>
+  </div>
+</div></div>
+
+<div class="card"><div class="body">
+  <h2>Editions</h2>
+  <div class="tiers">
+  {{range .Data.Tiers}}
+    <div class="tier {{if eq .Tier $l.Tier}}current{{end}}">
+      <h3>{{.Tier.Title}}</h3>
+      <div class="price">{{.Price}}</div>
+      <ul>
+        <li>{{if .Limits.MaxReports}}{{.Limits.MaxReports}} scheduled reports{{else}}Unlimited reports{{end}}</li>
+        <li>{{if .Limits.MaxConnections}}{{.Limits.MaxConnections}} Grafana connection{{if gt .Limits.MaxConnections 1}}s{{end}}{{else}}Unlimited Grafana connections{{end}}</li>
+        <li class="{{if not .Limits.Branding}}no{{end}}">Your logo, colours and footer</li>
+        <li class="{{if not .Limits.RemoveCredit}}no{{end}}">No Panelpost credit</li>
+        <li class="{{if not .Limits.Bursting}}no{{end}}">One PDF per client{{if .Limits.MaxBurstTargets}} (up to {{.Limits.MaxBurstTargets}}){{end}}</li>
+        <li class="{{if not .Limits.Webhooks}}no{{end}}">Webhooks &amp; REST API</li>
+        <li class="{{if not .Limits.WhiteLabel}}no{{end}}">White-label per client</li>
+        <li>{{.Limits.HistoryDays}} days of history</li>
+      </ul>
+    </div>
+  {{end}}
+  </div>
+</div></div>
+{{end}}

@@ -1,0 +1,10 @@
+{{define "tabs"}}
+<div class="tabs">
+  <a href="/settings" {{if eq .Data.Tab "general"}}class="active"{{end}}>General</a>
+  <a href="/settings/email" {{if eq .Data.Tab "email"}}class="active"{{end}}>Email</a>
+  <a href="/settings/branding" {{if eq .Data.Tab "branding"}}class="active"{{end}}>Branding</a>
+  <a href="/settings/license" {{if eq .Data.Tab "license"}}class="active"{{end}}>License</a>
+  <a href="/settings/api" {{if eq .Data.Tab "api"}}class="active"{{end}}>API</a>
+  <a href="/settings/account" {{if eq .Data.Tab "account"}}class="active"{{end}}>Account</a>
+</div>
+{{end}}

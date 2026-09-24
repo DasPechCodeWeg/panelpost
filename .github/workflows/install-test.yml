@@ -1,0 +1,115 @@
+name: Install test
+
+# Installs the published release the way the README describes, on a fresh
+# machine and without credentials, to prove that a stranger can get started.
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag to test (default the latest release)
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  docker:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      grafana:
+        image: grafana/grafana:13.2.2
+        ports: ["3000:3000"]
+        env:
+          GF_SECURITY_ADMIN_PASSWORD: admin
+      mailpit:
+        image: axllent/mailpit:latest
+        ports: ["1025:1025", "8025:8025"]
+    steps:
+      # The checkout is only used for the test scripts, never to build.
+      - uses: actions/checkout@v4
+
+      - name: Prepare a Grafana with a dashboard and a Viewer token
+        run: echo "GRAFANA_TOKEN=$(python3 scripts/it-setup.py http://localhost:3000)" >> "$GITHUB_ENV"
+
+      - name: Pull the image without logging in
+        run: |
+          docker logout ghcr.io || true
+          image="ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/panelpost:latest"
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+          if ! docker pull "$image"; then
+            echo "::error::The image is not publicly downloadable. Make the package public: Packages → panelpost → Package settings → Change visibility → Public."
+            exit 1
+          fi
+
+      # The README's quick start. --add-host only lets the container reach
+      # this runner's Grafana and mail server.
+      - name: Start Panelpost as in the README
+        run: |
+          docker run -d --name panelpost -p 8080:8080 -v panelpost-data:/data \
+            --add-host=host.docker.internal:host-gateway "$IMAGE"
+          for i in $(seq 1 30); do curl -sf localhost:8080/healthz && break; sleep 1; done
+          docker logs panelpost
+          echo "SETUP_CODE=$(docker logs panelpost 2>&1 | grep -o 'setup_code=[a-z0-9]*' | head -1 | cut -d= -f2)" >> "$GITHUB_ENV"
+
+      - name: Walk through the first-run steps in a browser
+        env:
+          GRAFANA_URL: http://host.docker.internal:3000
+          SMTP_HOST: host.docker.internal
+          SMTP_PORT: "1025"
+          MAILPIT_API: http://localhost:8025
+        run: |
+          pip install --quiet playwright
+          python -m playwright install --with-deps chromium
+          python3 scripts/install-test.py
+
+      - name: The one-off render command from the README
+        run: |
+          mkdir out && cd out
+          docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/out" \
+            -e GRAFANA_URL=http://host.docker.internal:3000 -e GRAFANA_TOKEN="$GRAFANA_TOKEN" \
+            --add-host=host.docker.internal:host-gateway "$IMAGE" \
+            render -dashboard proto1 -period previous_month -tz Europe/Amsterdam -cover -out /out/report.pdf
+          test "$(head -c 4 report.pdf)" = "%PDF"
+
+      - name: Panelpost log
+        if: always()
+        run: docker logs panelpost || true
+
+  binary:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      grafana:
+        image: grafana/grafana:13.2.2
+        ports: ["3000:3000"]
+        env:
+          GF_SECURITY_ADMIN_PASSWORD: admin
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare Grafana
+        run: echo "GRAFANA_TOKEN=$(python3 scripts/it-setup.py http://localhost:3000)" >> "$GITHUB_ENV"
+
+      - name: Download the Linux binary from the release page
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          [ -n "$VERSION" ] || VERSION=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)
+          gh release download "$VERSION" --repo "$GITHUB_REPOSITORY" --pattern '*linux_amd64.tar.gz' --pattern checksums.txt
+          sha256sum --check --ignore-missing checksums.txt
+          tar xzf ./*linux_amd64.tar.gz
+          ./panelpost_*_linux_amd64/panelpost version
+
+      - name: Render a report with the installed Chrome
+        env:
+          GRAFANA_URL: http://localhost:3000
+        run: |
+          ./panelpost_*_linux_amd64/panelpost render -dashboard proto1 -period previous_week -cover -out report.pdf
+          test "$(head -c 4 report.pdf)" = "%PDF"

@@ -1,0 +1,30 @@
+{{define "content"}}
+<div class="pagehead"><div><h1>Settings</h1></div></div>
+{{template "tabs" .}}
+{{$g := .Data.G}}
+<form method="post" action="/settings/general" class="card">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <div class="section"><div class="grid2">
+    <div class="field"><label for="timezone">Default time zone</label>
+      <input id="timezone" name="timezone" type="text" list="tzlist" value="{{$g.Timezone}}" required>
+      <datalist id="tzlist">{{range .Data.Timezones}}<option value="{{.}}">{{end}}</datalist>
+      <p class="hint">Used for new reports and for "previous month" style periods.</p></div>
+    <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" name="week_starts_sunday" {{if $g.WeekStartsSunday}}checked{{end}}> Weeks start on Sunday</label></div>
+    <div class="field"><label for="public_url">Panelpost address <span class="opt">optional</span></label>
+      <input id="public_url" name="public_url" type="url" value="{{$g.PublicURL}}" placeholder="https://reports.example.com">
+      <p class="hint">Used for links in failure alerts.</p></div>
+    <div class="field"><label for="notify_email">Failure alerts to <span class="opt">optional</span></label>
+      <input id="notify_email" name="notify_email" type="email" value="{{$g.NotifyEmail}}" placeholder="you@example.com">
+      <p class="hint">Get an email when a scheduled report fails.</p></div>
+    <div class="field"><label for="image_format">Image quality</label>
+      <select id="image_format" name="image_format">
+        <option value="jpeg" {{if eq $g.ImageFormat "jpeg"}}selected{{end}}>Balanced (smaller PDFs, recommended for email)</option>
+        <option value="png" {{if eq $g.ImageFormat "png"}}selected{{end}}>Lossless (sharpest, larger PDFs)</option>
+      </select></div>
+    <div class="field"><label for="render_timeout">Render timeout <span class="opt">seconds</span></label>
+      <input id="render_timeout" name="render_timeout" type="number" min="15" max="600" value="{{$g.RenderTimeoutSeconds}}"></div>
+    <div class="field full"><label class="check"><input type="checkbox" name="include_notes" {{if $g.IncludeNotes}}checked{{end}}> Print rendering problems (for example a panel query error) at the end of the PDF</label></div>
+  </div></div>
+  <div class="formbar"><span></span><button class="btn primary" type="submit">Save</button></div>
+</form>
+{{end}}

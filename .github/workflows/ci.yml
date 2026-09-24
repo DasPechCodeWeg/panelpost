@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths:
+      - "**"
+      - .github/workflows/ci.yml
+  pull_request:
+    paths:
+      - "**"
+      - .github/workflows/ci.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: panelpost-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Unit tests
+        run: go test -race -count=1 ./...
+
+  integration:
+    name: integration (${{ matrix.grafana }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every version the website says is tested.
+        grafana:
+          - grafana/grafana:10.4.19
+          - grafana/grafana:11.6.6
+          - grafana/grafana:12.3.1
+          - grafana/grafana:13.2.2
+          - grafana/grafana-enterprise:13.2.2
+    services:
+      grafana:
+        image: ${{ matrix.grafana }}
+        ports: ["3000:3000"]
+        env:
+          GF_SECURITY_ADMIN_PASSWORD: admin
+          GF_ANALYTICS_REPORTING_ENABLED: "false"
+          GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      mailpit:
+        image: axllent/mailpit:latest
+        ports: ["1025:1025", "8025:8025"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Prepare Grafana
+        run: echo "PANELPOST_IT_TOKEN=$(python3 scripts/it-setup.py http://localhost:3000)" >> "$GITHUB_ENV"
+
+      - name: Integration tests (real Grafana, Chrome and SMTP)
+        env:
+          PANELPOST_IT_GRAFANA: http://localhost:3000
+          PANELPOST_IT_MAILPIT: localhost:1025|http://localhost:8025
+          PANELPOST_IT_OUT: ${{ runner.temp }}/pdfs
+          PANELPOST_CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          google-chrome --version
+          mkdir -p "$PANELPOST_IT_OUT"
+          go test -count=1 -run Integration -v ./internal/compose/ ./internal/runner/
+
+      - name: Check page headers, footers and numbering in the PDFs
+        run: |
+          pip install --quiet pymupdf
+          python3 scripts/check-pdf.py "$RUNNER_TEMP"/pdfs/*.pdf
+
+      - name: Upload sample PDFs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sample-pdfs-${{ strategy.job-index }}
+          path: ${{ runner.temp }}/pdfs
+          if-no-files-found: ignore
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: panelpost:ci
+          build-args: VERSION=ci-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke test
+        run: |
+          docker run -d --name pp -p 8080:8080 -e PANELPOST_ADMIN_PASSWORD=ci-password-123 panelpost:ci
+          for i in $(seq 1 30); do curl -sf localhost:8080/healthz && break; sleep 1; done
+          curl -sf localhost:8080/healthz
+          docker exec pp panelpost version
+          docker logs pp

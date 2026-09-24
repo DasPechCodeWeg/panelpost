@@ -1,0 +1,53 @@
+{{define "content"}}
+{{$csrf := .CSRF}}
+<div class="pagehead">
+  <div><h1>Reports</h1><p>Scheduled PDFs of your Grafana dashboards.</p></div>
+  <div class="actions">
+    {{if .Data.AtLimit}}
+      <a class="btn" href="{{pricingURL}}" target="_blank" rel="noopener">Upgrade for more than {{.Data.MaxReports}} reports</a>
+    {{else if .Data.Connections}}
+      <a class="btn primary" href="/reports/new">New report</a>
+    {{end}}
+  </div>
+</div>
+
+{{if not .Data.Connections}}
+<div class="card"><div class="empty">
+  <h2>Let's send your first report</h2>
+  <p>Panelpost turns any Grafana dashboard into a polished PDF and emails it on a schedule, without Grafana Enterprise.</p>
+  <a class="btn primary" href="/connections/new">Connect Grafana</a>
+  <div class="steps">
+    <div><b>1. Connect Grafana</b><span class="muted">Paste your Grafana URL and a read-only service account token.</span></div>
+    <div><b>2. Pick a dashboard</b><span class="muted">Choose the period, for example "previous month", and the layout.</span></div>
+    <div><b>3. Schedule it</b><span class="muted">Every Monday at 07:00, or on the 1st of the month, straight to inboxes.</span></div>
+  </div>
+</div></div>
+{{else if not .Data.Rows}}
+<div class="card"><div class="empty">
+  <h2>No reports yet</h2>
+  <p>Create a report from any dashboard. You can preview the PDF before anything is sent.</p>
+  <a class="btn primary" href="/reports/new">Create a report</a>
+</div></div>
+{{else}}
+<div class="card">
+<table class="list">
+  <thead><tr><th>Report</th><th>Schedule</th><th>Next run</th><th>Last run</th><th class="right"></th></tr></thead>
+  <tbody>
+  {{range .Data.Rows}}
+  <tr>
+    <td class="name"><a href="/reports/{{.Report.ID}}">{{.Report.Name}}</a>
+      <div class="sub">{{if .Report.DashboardTitle}}{{.Report.DashboardTitle}}{{else}}{{.Report.DashboardUID}}{{end}} · {{.Conn}}{{if .Report.Burst.Enabled}} · one PDF per {{.Report.Burst.Variable}} ({{len .Report.Burst.Targets}}){{end}}</div></td>
+    <td>{{if .Report.Enabled}}{{.Schedule}}{{else}}<span class="badge paused">Paused</span>{{end}}<div class="sub">{{.Report.Time.Label}}</div></td>
+    <td>{{if .Next.IsZero}}<span class="faint">—</span>{{else}}{{dt .Next}}<div class="sub">{{since .Next}}</div>{{end}}</td>
+    <td>{{with .Last}}<a href="/runs/{{.ID}}"><span class="badge {{.Status}}">{{.Status}}</span></a><div class="sub">{{since .CreatedAt}}</div>{{else}}<span class="faint">Never</span>{{end}}</td>
+    <td class="right">
+      <form class="inline" method="post" action="/reports/{{.Report.ID}}/run"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="btn small" type="submit" title="Render and deliver now">Run now</button></form>
+      <form class="inline" method="post" action="/reports/{{.Report.ID}}/toggle"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="btn small link" type="submit">{{if .Report.Enabled}}Pause{{else}}Enable{{end}}</button></form>
+    </td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+{{end}}
+{{end}}

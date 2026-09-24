@@ -1,0 +1,24 @@
+{{define "content"}}
+<div class="pagehead">
+  <div><h1>Grafana connections</h1><p>The Grafana instances Panelpost may read, each with a read-only service account token.</p></div>
+  <div class="actions">
+    {{if .Data.AtLimit}}<a class="btn" href="{{pricingURL}}" target="_blank" rel="noopener">Upgrade to connect more</a>
+    {{else}}<a class="btn primary" href="/connections/new">Add connection</a>{{end}}
+  </div>
+</div>
+<div class="card">
+{{if .Data.Connections}}
+<table class="list">
+  <thead><tr><th>Name</th><th>URL</th><th>Organisation</th><th>Updated</th></tr></thead>
+  <tbody>
+  {{range .Data.Connections}}
+  <tr><td class="name"><a href="/connections/{{.ID}}">{{.Name}}</a></td><td class="mono">{{.URL}}</td><td>{{.OrgID}}</td><td>{{since .UpdatedAt}}</td></tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}
+<div class="empty"><h2>Connect your first Grafana</h2><p>You need its URL and a service account token with the Viewer role.</p><a class="btn primary" href="/connections/new">Add connection</a></div>
+{{end}}
+</div>
+{{if .Data.AtLimit}}<p class="hint">The {{.License.Tier.Title}} edition includes {{.Data.Max}} connection(s).</p>{{end}}
+{{end}}

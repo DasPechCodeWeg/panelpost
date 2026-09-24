@@ -1,0 +1,6 @@
+data/
+dist/
+site/
+docs/
+*.pdf
+.git

@@ -1,0 +1,36 @@
+name: Join the pilot
+description: Get a free 90-day Business licence in return for honest feedback.
+title: "Pilot: "
+labels: [pilot]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying Panelpost. The licence key will be posted as a reply to this issue.
+        This issue is public, so don't include anything confidential.
+  - type: input
+    id: name
+    attributes:
+      label: Your name or company
+      placeholder: Acme Managed IT
+    validations:
+      required: true
+  - type: dropdown
+    id: version
+    attributes:
+      label: Grafana version
+      options: ["10.x", "11.x", "12.x", "13.x", "Enterprise", "Grafana Cloud", "Other / not sure"]
+    validations:
+      required: true
+  - type: textarea
+    id: use
+    attributes:
+      label: What would you use Panelpost for?
+      description: For example, "a monthly uptime report for each of our clients" or "a weekly PDF for management".
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: How do you make these reports today?
+      description: Screenshots, a script, Grafana Enterprise, not at all…

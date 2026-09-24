@@ -1,0 +1,39 @@
+{{define "content"}}
+{{$run := .Data.Run}}
+<div class="pagehead">
+  <div><h1>{{$run.ReportName}}</h1><p>{{$run.Trigger}} run · {{dt $run.CreatedAt}}</p></div>
+  <div class="actions"><a class="btn" href="/reports/{{$run.ReportID}}">Edit report</a></div>
+</div>
+<div class="card" data-run="{{$run.ID}}" data-status="{{$run.Status}}">
+  <div class="body">
+    <dl class="kv">
+      <dt>Status</dt><dd><span class="badge {{$run.Status}}">{{$run.Status}}</span>
+        {{if or (eq $run.Status "queued") (eq $run.Status "running")}} <span class="spinner"></span> <span class="muted">Rendering the dashboard… this page refreshes when the PDF is ready.</span>{{end}}</dd>
+      {{if $run.Period}}<dt>Period</dt><dd>{{$run.Period}}</dd>{{else if not $run.RangeFrom.IsZero}}<dt>Period</dt><dd>{{dt $run.RangeFrom}} – {{dt $run.RangeTo}}</dd>{{end}}
+      {{if $run.Duration}}<dt>Duration</dt><dd>{{dur $run.Duration}}</dd>{{end}}
+      {{if $run.Error}}<dt>Problem</dt><dd class="status err">{{$run.Error}}</dd>{{end}}
+    </dl>
+  </div>
+  {{if $run.Outputs}}
+  <div class="section">
+    <h2>Output</h2>
+    <ul class="outputs">
+    {{range $i, $o := $run.Outputs}}
+      <li>
+        <div class="row">
+          <div class="grow"><b>{{if $o.Target}}{{$o.Target}}{{else}}Report{{end}}</b>
+            {{if $o.File}}<span class="muted"> · {{$o.Pages}} pages · {{kb $o.Size}}</span>{{end}}</div>
+          {{if $o.File}}<a class="btn small" href="/files/{{$run.ID}}/{{$i}}" target="_blank" rel="noopener">Open PDF</a>
+          <a class="btn small" href="/files/{{$run.ID}}/{{$i}}?download=1">Download</a>{{end}}
+        </div>
+        {{range $o.Delivered}}<div class="hint">✓ Delivered via {{.}}</div>{{end}}
+        {{range $o.Warnings}}<div class="hint warn">⚠ {{.}}</div>{{end}}
+        {{if $o.Error}}<div class="hint error">✕ {{$o.Error}}</div>{{end}}
+      </li>
+    {{end}}
+    </ul>
+  </div>
+  {{end}}
+</div>
+{{if eq $run.Trigger "preview"}}<p class="hint">Previews are never delivered. Use “Run &amp; deliver now” on the report page to send it.</p>{{end}}
+{{end}}

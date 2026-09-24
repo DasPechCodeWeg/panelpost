@@ -1,0 +1,186 @@
+{{define "content"}}
+{{$f := .Data}}{{$r := .Data.Report}}{{$lim := .License.Limits}}
+<div class="pagehead">
+  <div><h1>{{if $f.IsNew}}New report{{else}}{{$r.Name}}{{end}}</h1>
+    <p>{{if $f.IsNew}}Pick a dashboard, a period and a schedule. Preview the PDF before anything is sent.{{else}}{{$r.Schedule.Describe}} · {{$r.Time.Label}}{{end}}</p></div>
+  {{if not $f.IsNew}}<div class="actions"><a class="btn" href="/runs?report={{$r.ID}}">All runs</a></div>{{end}}
+</div>
+
+{{if and $f.IsNew $f.AtLimit}}
+<div class="callout warn"><strong>You have reached the Community limit.</strong> The free edition includes {{$lim.MaxReports}} reports.
+  <a href="{{pricingURL}}" target="_blank" rel="noopener">Upgrade to Pro</a> for unlimited reports, your own branding and per-client delivery.</div>
+{{end}}
+
+<form method="post" action="/reports/save" id="report-form" class="card" data-report-form>
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <input type="hidden" name="id" value="{{$r.ID}}">
+  <input type="hidden" name="dashboard_title" value="{{$r.DashboardTitle}}" data-dashboard-title>
+
+  <div class="section">
+    <h2>Dashboard</h2>
+    <div class="grid2">
+      <div class="field"><label for="name">Report name</label>
+        <input id="name" name="name" type="text" required value="{{$r.Name}}" placeholder="Monthly availability report"></div>
+      <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" name="enabled" {{if $r.Enabled}}checked{{end}}> Enabled (runs on schedule)</label></div>
+      <div class="field"><label for="connection">Grafana connection</label>
+        <select id="connection" name="connection_id" required data-connection>
+          {{range $f.Connections}}<option value="{{.ID}}" {{if eq .ID $r.ConnectionID}}selected{{end}}>{{.Name}} · {{.URL}}</option>{{end}}
+        </select></div>
+      <div class="field"><label for="dashboard">Dashboard</label>
+        <div class="row">
+          <select id="dashboard" class="grow" data-dashboard-select data-current="{{$r.DashboardUID}}" data-current-title="{{$r.DashboardTitle}}">
+            <option value="">Loading dashboards…</option>
+          </select>
+        </div>
+        <input type="text" name="dashboard_uid" value="{{$r.DashboardUID}}" required placeholder="Dashboard UID" data-dashboard-uid class="mono">
+        <p class="hint" data-dashboard-status>Pick from the list or paste the UID from the dashboard URL (<code>/d/<b>UID</b>/…</code>).</p>
+      </div>
+      <div class="field full"><label for="variables">Template variables <span class="opt">one per line: <code>name = value1, value2</code> · use <code>All</code> for all values</span></label>
+        <textarea id="variables" name="variables" rows="3" data-variables placeholder="client = acme&#10;env = production">{{$f.VarLines}}</textarea>
+        <p class="hint" data-variable-hint></p></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Reporting period</h2>
+    <div class="grid3">
+      <div class="field"><label for="time_preset">Period</label>
+        <select id="time_preset" name="time_preset" data-time-preset>
+          {{range $f.Presets}}<option value="{{.ID}}" {{if eq .ID $r.Time.Preset}}selected{{end}}>{{.Label}}</option>{{end}}
+          <option value="custom" {{if eq $r.Time.Preset "custom"}}selected{{end}}>Custom…</option>
+        </select></div>
+      <div class="field"><label for="timezone">Time zone</label>
+        <input id="timezone" name="timezone" type="text" list="tzlist" value="{{$r.Timezone}}" data-timezone>
+        <datalist id="tzlist">{{range $f.Timezones}}<option value="{{.}}">{{end}}</datalist></div>
+      <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" name="week_starts_sunday" {{if $r.WeekStartsSunday}}checked{{end}}> Weeks start on Sunday</label></div>
+      <div class="field" data-custom-time><label for="time_from">From</label><input id="time_from" name="time_from" type="text" value="{{$r.Time.From}}" placeholder="now-30d/d" class="mono"></div>
+      <div class="field" data-custom-time><label for="time_to">To</label><input id="time_to" name="time_to" type="text" value="{{$r.Time.To}}" placeholder="now-1d/d" class="mono"></div>
+      <div class="field" data-custom-time><label>&nbsp;</label><p class="hint">Grafana syntax: <code>now-7d</code>, <code>now-1M/M</code> (previous month), <code>now/w</code>, or a date like <code>2026-08-01</code>.</p></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Schedule</h2>
+    <div class="grid3">
+      <div class="field"><label for="schedule_kind">Repeat</label>
+        <select id="schedule_kind" name="schedule_kind" data-schedule-kind>
+          <option value="manual" {{if eq $r.Schedule.Kind "manual"}}selected{{end}}>Manually only</option>
+          <option value="daily" {{if eq $r.Schedule.Kind "daily"}}selected{{end}}>Every day</option>
+          <option value="weekly" {{if eq $r.Schedule.Kind "weekly"}}selected{{end}}>Weekly</option>
+          <option value="monthly" {{if eq $r.Schedule.Kind "monthly"}}selected{{end}}>Monthly</option>
+          <option value="quarterly" {{if eq $r.Schedule.Kind "quarterly"}}selected{{end}}>Quarterly</option>
+          <option value="cron" {{if eq $r.Schedule.Kind "cron"}}selected{{end}}>Cron expression</option>
+        </select></div>
+      <div class="field" data-sched="daily weekly monthly quarterly"><label for="at">At</label><input id="at" name="at" type="time" value="{{if $r.Schedule.At}}{{$r.Schedule.At}}{{else}}07:00{{end}}"></div>
+      <div class="field" data-sched="monthly quarterly"><label for="month_day">Day of the month</label><input id="month_day" name="month_day" type="number" min="1" max="28" value="{{if $r.Schedule.MonthDay}}{{$r.Schedule.MonthDay}}{{else}}1{{end}}"></div>
+      <div class="field" data-sched="cron"><label for="cron">Cron <span class="opt">minute hour day month weekday</span></label><input id="cron" name="cron" type="text" value="{{$r.Schedule.Cron}}" placeholder="0 7 * * 1-5" class="mono"></div>
+      <div class="field full" data-sched="weekly"><label>On</label>
+        <div class="days">{{range $i, $d := $f.Weekdays}}<label><input type="checkbox" name="weekdays" value="{{$i}}" {{if containsInt $r.Schedule.Weekdays $i}}checked{{end}}> {{$d}}</label>{{end}}</div></div>
+    </div>
+    <p class="hint" data-schedule-preview>{{if $f.Upcoming}}Next runs: {{range $i, $t := $f.Upcoming}}{{if $i}}, {{end}}{{dt $t}}{{end}}{{end}}</p>
+  </div>
+
+  <div class="section">
+    <h2>Layout</h2>
+    <div class="grid3">
+      <div class="field"><label for="mode">Style</label>
+        <select id="mode" name="mode" data-mode>
+          <option value="dashboard" {{if eq $r.Layout.Mode "dashboard"}}selected{{end}}>As on screen (pages break between panels)</option>
+          <option value="panels" {{if eq $r.Layout.Mode "panels"}}selected{{end}}>Panels with row headings</option>
+        </select></div>
+      <div class="field" data-panels-only><label for="columns">Panel size</label>
+        <select id="columns" name="columns">
+          <option value="2" {{if ne $r.Layout.Columns 1}}selected{{end}}>Keep dashboard proportions</option>
+          <option value="1" {{if eq $r.Layout.Columns 1}}selected{{end}}>One panel per line, larger</option>
+        </select></div>
+      <div class="field"><label for="paper">Paper</label>
+        <div class="row"><select id="paper" name="paper" class="grow">
+          {{range $p := (list "A4" "Letter" "A3")}}<option {{if eq $p $r.Layout.Paper}}selected{{end}}>{{$p}}</option>{{end}}
+        </select>
+        <select name="orientation" class="grow">
+          <option value="landscape" {{if eq $r.Layout.Orientation "landscape"}}selected{{end}}>Landscape</option>
+          <option value="portrait" {{if eq $r.Layout.Orientation "portrait"}}selected{{end}}>Portrait</option>
+        </select></div></div>
+      <div class="field"><label for="theme">Theme</label>
+        <select id="theme" name="theme"><option value="light" {{if eq $r.Layout.Theme "light"}}selected{{end}}>Light (best for print)</option><option value="dark" {{if eq $r.Layout.Theme "dark"}}selected{{end}}>Dark</option></select></div>
+      <div class="field"><label for="width">Browser width <span class="opt">px</span></label>
+        <input id="width" name="width" type="number" min="800" max="3000" step="50" value="{{if $r.Layout.Width}}{{$r.Layout.Width}}{{end}}" placeholder="1400"></div>
+      <div class="field"><label>Options</label>
+        <label class="check"><input type="checkbox" name="cover_page" {{if $r.Layout.CoverPage}}checked{{end}}> Cover page</label>
+        <label class="check"><input type="checkbox" name="expand_rows" {{if $r.Layout.ExpandRows}}checked{{end}}> Expand collapsed rows</label></div>
+      <div class="field full" data-panels-only><label for="panels">Only these panels <span class="opt">optional, one title per line</span></label>
+        <textarea id="panels" name="panels" rows="2" data-panel-list>{{$f.PanelLines}}</textarea><p class="hint" data-panel-hint></p></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Delivery</h2>
+    <div class="grid2">
+      <div class="field"><label for="email_to">Email to <span class="opt">comma separated</span></label><textarea id="email_to" name="email_to" rows="2" class="prose" placeholder="ops@example.com, manager@example.com">{{join $r.Delivery.Email.To ", "}}</textarea></div>
+      <div class="field"><label for="email_cc">Cc / Bcc <span class="opt">optional</span></label>
+        <input id="email_cc" name="email_cc" type="text" value="{{join $r.Delivery.Email.Cc ", "}}" placeholder="Cc">
+        <input name="email_bcc" type="text" value="{{join $r.Delivery.Email.Bcc ", "}}" placeholder="Bcc"></div>
+      <div class="field"><label for="email_subject">Subject <span class="opt">optional</span></label><input id="email_subject" name="email_subject" type="text" value="{{$r.Delivery.Email.Subject}}" placeholder="{{"{{report}}"}} · {{"{{period}}"}}"></div>
+      <div class="field"><label for="file_name">PDF file name <span class="opt">optional</span></label><input id="file_name" name="file_name" type="text" value="{{$r.FileName}}" placeholder="{{"{{report}}"}} {{"{{from}}"}}"></div>
+      <div class="field full"><label for="email_body">Message <span class="opt">optional · placeholders: {{"{{report}} {{period}} {{dashboard}} {{target}} {{company}} {{date}} {{pages}}"}}</span></label>
+        <textarea id="email_body" name="email_body" rows="4" class="prose" placeholder="Hello,&#10;&#10;Attached is the {{"{{report}}"}} report for {{"{{period}}"}}.">{{$r.Delivery.Email.Body}}</textarea></div>
+      <div class="field {{if not $lim.Webhooks}}locked{{end}}"><label for="webhooks">Webhooks <span class="pro">Pro</span> <span class="opt">one per line: <code>URL [secret]</code></span></label>
+        <textarea id="webhooks" name="webhooks" rows="2" placeholder="https://example.com/hooks/reports s3cr3t" {{if not $lim.Webhooks}}disabled{{end}}>{{$f.HookLines}}</textarea>
+        <p class="hint">Receives the PDF as multipart form data, signed with <code>X-Panelpost-Signature</code>.</p></div>
+      <div class="field"><label>Archive</label><label class="check"><input type="checkbox" name="folder" {{if $r.Delivery.Folder}}checked{{end}}> Also save to the outbox folder</label>
+        <p class="hint">Mount <code>/data/outbox</code> to a network share to file reports automatically.</p></div>
+    </div>
+  </div>
+
+  <div class="section {{if not $lim.Bursting}}locked{{end}}">
+    <h2>One PDF per client <span class="pro">Pro</span></h2>
+    <p class="hint">Render the dashboard once per value of a variable and send each PDF to its own recipients. Ideal for MSPs and agencies: one dashboard, every customer gets their own report.</p>
+    {{if not $lim.Bursting}}<div class="callout"><strong>Per-client delivery is a Pro feature.</strong> <a href="{{pricingURL}}" target="_blank" rel="noopener">See plans</a></div>{{end}}
+    <div class="grid3">
+      <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" name="burst_enabled" {{if $r.Burst.Enabled}}checked{{end}} {{if not $lim.Bursting}}disabled{{end}} data-burst-toggle> Enable per-client PDFs</label></div>
+      <div class="field" data-burst><label for="burst_variable">Variable</label><input id="burst_variable" name="burst_variable" type="text" value="{{$r.Burst.Variable}}" placeholder="client" class="mono" {{if not $lim.Bursting}}disabled{{end}}></div>
+      <div class="field full" data-burst><label for="burst_targets">Recipients <span class="opt">one per line: <code>value | label | email1, email2</code></span></label>
+        <textarea id="burst_targets" name="burst_targets" rows="4" placeholder="acme | Acme Corp | it@acme.example&#10;globex | Globex | cto@globex.example, ops@globex.example" {{if not $lim.Bursting}}disabled{{end}}>{{$f.BurstLines}}</textarea></div>
+    </div>
+  </div>
+
+  <div class="section {{if not $lim.Branding}}locked{{end}}">
+    <h2>Branding for this report <span class="pro">Pro</span></h2>
+    <p class="hint">Overrides the defaults under Settings → Branding. Leave empty to use the defaults.</p>
+    <div class="grid3">
+      <div class="field"><label for="brand_company">Company name</label><input id="brand_company" name="brand_company" type="text" value="{{$r.Branding.CompanyName}}"></div>
+      <div class="field"><label for="brand_logo">Logo</label>
+        <select id="brand_logo" name="brand_logo"><option value="">Default</option>{{range $f.Assets}}<option {{if eq . $r.Branding.LogoAsset}}selected{{end}}>{{.}}</option>{{end}}</select></div>
+      <div class="field"><label for="brand_accent">Accent colour</label>
+        <div class="row"><input id="brand_accent" name="brand_accent" type="color" value="{{if $r.Branding.AccentColor}}{{$r.Branding.AccentColor}}{{else}}#1f6feb{{end}}">
+        <label class="check"><input type="checkbox" name="brand_accent_default" {{if not $r.Branding.AccentColor}}checked{{end}}> Use default</label></div></div>
+      <div class="field"><label for="brand_footer">Footer text</label><input id="brand_footer" name="brand_footer" type="text" maxlength="200" value="{{$r.Branding.FooterText}}" placeholder="Confidential"></div>
+      <div class="field full"><label for="brand_intro">Cover text</label><textarea id="brand_intro" name="brand_intro" rows="2" class="prose">{{$r.Branding.Intro}}</textarea></div>
+    </div>
+  </div>
+
+  <div class="formbar">
+    <span class="hint">Preview renders the PDF without sending it.</span>
+    <div class="actions">
+      <button class="btn" type="submit" name="then" value="preview">Save &amp; preview</button>
+      <button class="btn primary" type="submit">Save report</button>
+    </div>
+  </div>
+</form>
+
+{{if not $f.IsNew}}
+<div class="card"><div class="body">
+  <div class="row">
+    <div class="grow"><h2>Recent runs</h2></div>
+    <form class="inline" method="post" action="/reports/{{$r.ID}}/run"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="btn small" type="submit">Run &amp; deliver now</button></form>
+    <form class="inline" method="post" action="/reports/{{$r.ID}}/duplicate"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="btn small" type="submit">Duplicate</button></form>
+    <form class="inline" method="post" action="/reports/{{$r.ID}}/delete" data-confirm="Delete this report? Past runs are kept."><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="btn small danger" type="submit">Delete</button></form>
+  </div>
+  {{if $f.Runs}}
+  <table class="list">
+    <tbody>{{range $f.Runs}}<tr><td><a href="/runs/{{.ID}}"><span class="badge {{.Status}}">{{.Status}}</span></a></td><td>{{.Trigger}}</td><td>{{dt .CreatedAt}}</td><td class="sub">{{.Error}}</td></tr>{{end}}</tbody>
+  </table>
+  {{else}}<p class="hint">No runs yet. Use “Save &amp; preview” to see the PDF.</p>{{end}}
+</div></div>
+{{end}}
+{{end}}

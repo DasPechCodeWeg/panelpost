@@ -1,0 +1,36 @@
+{{define "content"}}
+<div class="pagehead"><div><h1>Settings</h1></div></div>
+{{template "tabs" .}}
+{{if not .Data.Allowed}}<div class="callout"><strong>The REST API is part of Pro and Business.</strong> Trigger reports from CI, cron or your PSA tool and fetch PDFs programmatically.
+  <a href="{{pricingURL}}" target="_blank" rel="noopener">See plans</a></div>{{end}}
+{{if .Data.New}}
+<div class="card"><div class="body">
+  <h2>Your new API key</h2>
+  <p class="hint">Copy it now; it is not shown again.</p>
+  <div class="keybox">{{.Data.New}}</div>
+</div></div>
+{{end}}
+<div class="card"><div class="body">
+  <h2>API keys</h2>
+  <form method="post" action="/settings/api" class="row">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <input class="grow" name="name" type="text" placeholder="Key name, for example “CI”" {{if not .Data.Allowed}}disabled{{end}}>
+    <button class="btn primary" type="submit" {{if not .Data.Allowed}}disabled{{end}}>Create key</button>
+  </form>
+  {{if .Data.Keys}}
+  <table class="list"><thead><tr><th>Name</th><th>Key</th><th>Created</th><th>Last used</th><th></th></tr></thead><tbody>
+  {{range .Data.Keys}}<tr><td>{{.Name}}</td><td class="mono">{{.Prefix}}…</td><td>{{dt .CreatedAt}}</td><td>{{since .LastUsedAt}}</td>
+    <td class="right"><form class="inline" method="post" action="/settings/api/{{.ID}}/delete" data-confirm="Revoke this key?"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="btn small danger" type="submit">Revoke</button></form></td></tr>{{end}}
+  </tbody></table>
+  {{end}}
+</div></div>
+<div class="card"><div class="body">
+  <h2>Examples</h2>
+  <p class="hint">Run a report and deliver it:</p>
+  <pre class="keybox">curl -X POST -H "Authorization: Bearer pp_…" https://panelpost.example.com/api/v1/reports/REPORT_ID/run</pre>
+  <p class="hint">Render any dashboard to PDF on demand:</p>
+  <pre class="keybox">curl -X POST -H "Authorization: Bearer pp_…" -H "Content-Type: application/json" \
+  -d '{"connection_id":"…","dashboard_uid":"…","time":{"preset":"previous_month"}}' \
+  -o report.pdf https://panelpost.example.com/api/v1/render</pre>
+</div></div>
+{{end}}

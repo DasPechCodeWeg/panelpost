@@ -1,0 +1,31 @@
+{{define "content"}}
+<div class="pagehead"><div><h1>Settings</h1></div></div>
+{{template "tabs" .}}
+{{$s := .Data.S}}
+<form method="post" action="/settings/email" class="card" data-email-form>
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <div class="section"><div class="grid2">
+    <div class="field"><label for="host">SMTP server</label><input id="host" name="host" type="text" value="{{$s.Host}}" placeholder="smtp.example.com" required></div>
+    <div class="field"><label for="port">Port &amp; security</label>
+      <div class="row"><input id="port" name="port" type="number" class="grow" value="{{if $s.Port}}{{$s.Port}}{{end}}" placeholder="587">
+        <select name="tls" class="grow">
+          <option value="starttls" {{if or (eq $s.TLS "starttls") (eq $s.TLS "")}}selected{{end}}>STARTTLS (587)</option>
+          <option value="tls" {{if eq $s.TLS "tls"}}selected{{end}}>TLS (465)</option>
+          <option value="none" {{if eq $s.TLS "none"}}selected{{end}}>None (internal relay)</option>
+        </select></div></div>
+    <div class="field"><label for="username">Username <span class="opt">optional</span></label><input id="username" name="username" type="text" autocomplete="off" value="{{$s.Username}}"></div>
+    <div class="field"><label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" placeholder="{{if .Data.HasPassword}}Stored securely · leave empty to keep{{end}}">
+      {{if .Data.HasPassword}}<label class="check"><input type="checkbox" name="clear_password"> Remove stored password</label>{{end}}</div>
+    <div class="field"><label for="from">Sender address</label><input id="from" name="from" type="email" value="{{$s.From}}" placeholder="reports@example.com" required></div>
+    <div class="field"><label for="from_name">Sender name <span class="opt">optional</span></label><input id="from_name" name="from_name" type="text" value="{{$s.FromName}}" placeholder="Acme Reporting"></div>
+    <div class="field full"><label class="check"><input type="checkbox" name="insecure" {{if $s.Insecure}}checked{{end}}> Accept self-signed certificates from the mail server</label></div>
+  </div></div>
+  <div class="section">
+    <div class="row"><div class="grow field"><label for="test_to">Send a test email to</label><input id="test_to" name="test_to" type="email" placeholder="you@example.com"></div>
+      <div><label>&nbsp;</label><br><button class="btn" type="button" data-test-email>Send test</button></div></div>
+    <div class="status" data-test-email-result></div>
+  </div>
+  <div class="formbar"><span class="hint">Works with any SMTP server: Microsoft 365, Google Workspace, Amazon SES, Postmark, Mailgun or your own relay.</span><button class="btn primary" type="submit">Save</button></div>
+</form>
+{{end}}

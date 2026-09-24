@@ -1,0 +1,6 @@
+/data/
+/dist/
+/panelpost
+*.pdf
+!docs/sample-report.pdf
+!site/sample-report.pdf

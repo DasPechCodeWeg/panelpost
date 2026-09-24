@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf" content="{{.CSRF}}">
+<title>{{.Title}} · Panelpost</title>
+<link rel="stylesheet" href="/static/app.css">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<script src="/static/app.js" defer></script>
+</head>
+<body>
+{{if .Nav}}
+<header class="topbar">
+  <div class="inner">
+    <a class="brand" href="/"><span class="mark"></span>Panelpost</a>
+    <nav class="main">
+      <a href="/" {{if eq .Nav "reports"}}class="active"{{end}}>Reports</a>
+      <a href="/runs" {{if eq .Nav "runs"}}class="active"{{end}}>Runs</a>
+      <a href="/connections" {{if eq .Nav "connections"}}class="active"{{end}}>Grafana</a>
+      <a href="/settings" {{if eq .Nav "settings"}}class="active"{{end}}>Settings</a>
+    </nav>
+    <a href="/settings/license" class="edition {{if .License.Paid}}paid{{end}}">{{.License.Tier.Title}}</a>
+    {{if not .License.Paid}}<a class="upgrade" href="{{pricingURL}}" target="_blank" rel="noopener">Upgrade</a>{{end}}
+    <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="btn link" type="submit">Sign out</button></form>
+  </div>
+</header>
+{{end}}
+<main>
+  {{if .License.Problem}}<div class="flash err">License: {{.License.Problem}} <a href="/settings/license">Review</a></div>{{end}}
+  {{if .Flash}}<div class="flash ok">{{.Flash}}</div>{{end}}
+  {{if .FlashErr}}<div class="flash err">{{.FlashErr}}</div>{{end}}
+  {{template "content" .}}
+</main>
+{{if .Nav}}<footer class="foot"><span>Panelpost {{.Version}}</span><span>Grafana is a trademark of Grafana Labs. Panelpost is independent software.</span></footer>{{end}}
+</body>
+</html>

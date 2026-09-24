@@ -1,0 +1,13 @@
+{{define "content"}}
+<div class="pagehead"><div><h1>Settings</h1></div></div>
+{{template "tabs" .}}
+<form method="post" action="/settings/account" class="card">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <div class="section"><h2>Change admin password</h2><div class="grid3">
+    <div class="field"><label for="current">Current password</label><input id="current" name="current" type="password" autocomplete="current-password" required></div>
+    <div class="field"><label for="password">New password</label><input id="password" name="password" type="password" autocomplete="new-password" minlength="10" required></div>
+    <div class="field"><label for="confirm">Repeat new password</label><input id="confirm" name="confirm" type="password" autocomplete="new-password" minlength="10" required></div>
+  </div></div>
+  <div class="formbar"><span class="hint">Forgot it? Set <code>PANELPOST_ADMIN_PASSWORD</code> and restart to reset.</span><button class="btn primary" type="submit">Change password</button></div>
+</form>
+{{end}}

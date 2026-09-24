@@ -1,0 +1,37 @@
+name: Pilot feedback
+description: Your verdict after trying Panelpost. Short answers are fine.
+title: "Feedback: "
+labels: [feedback]
+body:
+  - type: dropdown
+    id: worked
+    attributes:
+      label: Did Panelpost produce a report you would actually send?
+      options: ["Yes, as it is", "Yes, after some changes", "No"]
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What was wrong or missing?
+  - type: textarea
+    id: before
+    attributes:
+      label: What did you do before, and how long did it take?
+  - type: dropdown
+    id: pay
+    attributes:
+      label: Would you pay €29 a month (or €290 a year) for this?
+      options: ["Yes", "Yes, for the Business plan (€79/month)", "Only at a lower price", "Only if it did something more", "No"]
+    validations:
+      required: true
+  - type: textarea
+    id: price
+    attributes:
+      label: If not, what would you pay, or what would it need to do?
+  - type: checkboxes
+    id: contact
+    attributes:
+      label: Follow-up
+      options:
+        - label: You may contact me when the paid version is available.

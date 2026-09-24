@@ -1,0 +1,19 @@
+{{define "content"}}
+<div class="auth">
+  <div class="brand"><span class="mark"></span>Panelpost</div>
+  <div class="card"><div class="body">
+    <h2>Welcome! Secure this installation</h2>
+    <p class="hint">Choose the admin password. The setup code is printed in Panelpost's log when it starts
+      (for Docker: <code>docker logs panelpost</code>).</p>
+    <form method="post" action="/setup">
+      <div class="field"><label for="token">Setup code</label>
+        <input id="token" name="token" type="text" autocomplete="off" required value="{{.Data.Token}}"></div>
+      <div class="field"><label for="password">Admin password</label>
+        <input id="password" name="password" type="password" autocomplete="new-password" minlength="10" required></div>
+      <div class="field"><label for="confirm">Repeat password</label>
+        <input id="confirm" name="confirm" type="password" autocomplete="new-password" minlength="10" required></div>
+      <button class="btn primary" type="submit">Continue</button>
+    </form>
+  </div></div>
+</div>
+{{end}}

@@ -1,0 +1,13 @@
+{{define "content"}}
+<div class="auth">
+  <div class="brand"><span class="mark"></span>Panelpost</div>
+  <div class="card"><div class="body">
+    <form method="post" action="/login">
+      <input type="hidden" name="next" value="{{.Data.Next}}">
+      <div class="field"><label for="password">Admin password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" autofocus required></div>
+      <button class="btn primary" type="submit">Sign in</button>
+    </form>
+  </div></div>
+</div>
+{{end}}

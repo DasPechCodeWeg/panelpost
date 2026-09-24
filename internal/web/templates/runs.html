@@ -1,0 +1,25 @@
+{{define "content"}}
+<div class="pagehead"><div><h1>Runs</h1><p>Every rendering and delivery, newest first.</p></div></div>
+<div class="card">
+{{if .Data.Runs}}
+<table class="list">
+  <thead><tr><th>Status</th><th>Report</th><th>Period</th><th>Started</th><th>Duration</th><th>Output</th></tr></thead>
+  <tbody>
+  {{range .Data.Runs}}
+  <tr>
+    <td><a href="/runs/{{.ID}}"><span class="badge {{.Status}}">{{.Status}}</span></a></td>
+    <td class="name"><a href="/runs/{{.ID}}">{{.ReportName}}</a><div class="sub">{{.Trigger}}</div></td>
+    <td>{{if .Period}}{{.Period}}{{else if not .RangeFrom.IsZero}}{{dt .RangeFrom}}<div class="sub">to {{dt .RangeTo}}</div>{{else}}<span class="faint">—</span>{{end}}</td>
+    <td>{{dt .CreatedAt}}<div class="sub">{{since .CreatedAt}}</div></td>
+    <td>{{if .Duration}}{{dur .Duration}}{{else}}<span class="faint">—</span>{{end}}</td>
+    <td>{{$run := .}}{{range $i, $o := .Outputs}}{{if $o.File}}<a href="/files/{{$run.ID}}/{{$i}}" target="_blank" rel="noopener">PDF{{if $o.Target}} · {{$o.Target}}{{end}}</a><br>{{end}}{{end}}
+      {{if .Error}}<span class="sub">{{.Error}}</span>{{end}}</td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}
+<div class="empty"><h2>No runs yet</h2><p>Runs appear here when a report is previewed, run by hand or triggered by its schedule.</p></div>
+{{end}}
+</div>
+{{end}}
