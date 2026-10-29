@@ -171,6 +171,8 @@ you're happy to script the schedule and email yourself, the free
 is a good choice. Panelpost is for Grafana that stays on your own servers,
 with reports that are scheduled, branded and delivered without scripts to
 maintain.
+[Every option, compared in detail](docs/grafana-oss-pdf-reports.md), with a
+cron recipe for the free plugin.
 
 ## Configuration
 
