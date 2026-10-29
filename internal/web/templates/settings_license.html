@@ -9,6 +9,7 @@
     {{if .Data.Masked}}<dt>Key</dt><dd class="mono">{{.Data.Masked}}</dd>{{end}}
     {{if $l.Source}}<dt>Issued by</dt><dd>{{$l.Source}}</dd>{{end}}
     {{if not $l.ExpiresAt.IsZero}}<dt>Valid until</dt><dd>{{dt $l.ExpiresAt}}</dd>{{end}}
+    {{if not $l.UpdatesUntil.IsZero}}<dt>Updates until</dt><dd>{{$l.UpdatesUntil.Format "2 Jan 2006"}} · versions released after this date need a renewal</dd>{{end}}
     {{if not $l.ValidatedAt.IsZero}}<dt>Last checked</dt><dd>{{since $l.ValidatedAt}}</dd>{{end}}
   </dl>
   {{if not $l.Paid}}<p class="hint">You are using the free Community edition: up to 3 reports and one Grafana connection, with a small Panelpost credit in each PDF.</p>{{end}}

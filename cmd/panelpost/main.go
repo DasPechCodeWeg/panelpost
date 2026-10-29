@@ -50,7 +50,11 @@ func main() {
 	case "healthcheck":
 		err = healthcheck()
 	case "version", "--version":
-		fmt.Println("panelpost", version)
+		if d, ok := license.ReleaseDate(); ok {
+			fmt.Println("panelpost", version, d.Format("2006-01-02"))
+		} else {
+			fmt.Println("panelpost", version)
+		}
 	case "help", "-h", "--help":
 		usage()
 	default:

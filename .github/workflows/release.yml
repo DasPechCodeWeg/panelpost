@@ -42,7 +42,9 @@ jobs:
           name="panelpost_${VERSION#v}_${GOOS}_${GOARCH}"
           ext=""; [ "$GOOS" = windows ] && ext=".exe"
           mkdir -p "dist/$name"
-          go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" \
+          # One-time licences cover releases up to a date: the commit date.
+          released=$(TZ=UTC git log -1 --format=%cd --date=format-local:%Y-%m-%d)
+          go build -trimpath -ldflags "-s -w -X main.version=${VERSION} -X github.com/DasPechCodeWeg/panelpost/internal/license.releaseDate=${released}" \
             -o "dist/$name/panelpost$ext" ./cmd/panelpost
           cp README.md LICENSE "dist/$name/"
           cd dist
@@ -64,7 +66,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - id: meta
-        run: echo "image=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/panelpost" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "image=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/panelpost" >> "$GITHUB_OUTPUT"
+          echo "released=$(TZ=UTC git log -1 --format=%cd --date=format-local:%Y-%m-%d)" >> "$GITHUB_OUTPUT"
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -72,6 +76,7 @@ jobs:
           push: true
           build-args: |
             VERSION=${{ env.VERSION }}
+            RELEASE_DATE=${{ steps.meta.outputs.released }}
           tags: |
             ${{ steps.meta.outputs.image }}:${{ env.VERSION }}
             ${{ steps.meta.outputs.image }}:latest

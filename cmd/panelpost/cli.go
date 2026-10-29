@@ -181,6 +181,7 @@ func licenseCmd(args []string) error {
 		name := fs.String("name", "", "licensee (company) name")
 		email := fs.String("email", "", "licensee email")
 		expires := fs.String("expires", "", "expiry date YYYY-MM-DD (empty = perpetual)")
+		updates := fs.String("updates-until", "", "one-time licence: covers versions released until YYYY-MM-DD, forever (empty = all versions)")
 		_ = fs.Parse(args[1:])
 		raw, err := os.ReadFile(*keyFile)
 		if err != nil {
@@ -202,6 +203,13 @@ func licenseCmd(args []string) error {
 			}
 			p.ExpiresAt = exp.Add(24*time.Hour - time.Second).Unix()
 		}
+		if *updates != "" {
+			upd, err := time.Parse("2006-01-02", *updates)
+			if err != nil {
+				return fmt.Errorf("updates-until: %w", err)
+			}
+			p.UpdatesUntil = upd.Add(24*time.Hour - time.Second).Unix()
+		}
 		key, err := license.Sign(priv, p)
 		if err != nil {
 			return err
@@ -220,7 +228,11 @@ func licenseCmd(args []string) error {
 		if !lic.ExpiresAt.IsZero() {
 			exp = lic.ExpiresAt.Format("2006-01-02")
 		}
-		fmt.Printf("valid %s license %s for %s <%s>, expires %s\n", lic.Tier.Title(), lic.ID, lic.Licensee, lic.Email, exp)
+		upd := "all versions"
+		if !lic.UpdatesUntil.IsZero() {
+			upd = "versions released until " + lic.UpdatesUntil.Format("2006-01-02")
+		}
+		fmt.Printf("valid %s license %s for %s <%s>, expires %s, covers %s\n", lic.Tier.Title(), lic.ID, lic.Licensee, lic.Email, exp, upd)
 		return nil
 	}
 	return fmt.Errorf("unknown license command %q", args[0])

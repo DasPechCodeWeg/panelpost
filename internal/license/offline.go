@@ -23,6 +23,18 @@ const OfflinePrefix = "PP1-"
 //	-ldflags "-X github.com/DasPechCodeWeg/panelpost/internal/license.embeddedPublicKeys=BASE64[,BASE64]"
 var embeddedPublicKeys = "PWBbBDjN8zUpGbsyp637AMKUvrLlMnesbNNTzCXlZgk="
 
+// releaseDate is the date of the code in this build, YYYY-MM-DD. Releases set
+// it with -ldflags "-X github.com/DasPechCodeWeg/panelpost/internal/license.releaseDate=2026-10-29".
+// One-time licences cover builds dated up to their UpdatesUntil; builds
+// without a date (from source) don't enforce it.
+var releaseDate = ""
+
+// ReleaseDate returns the date of this build, if it has one.
+func ReleaseDate() (time.Time, bool) {
+	t, err := time.Parse("2006-01-02", strings.TrimSpace(releaseDate))
+	return t, err == nil
+}
+
 // Payload is the signed content of an offline key.
 type Payload struct {
 	Version   int    `json:"v"`
@@ -32,14 +44,18 @@ type Payload struct {
 	Email     string `json:"email,omitempty"`
 	IssuedAt  int64  `json:"iat"`
 	ExpiresAt int64  `json:"exp,omitempty"` // unix seconds, 0 = perpetual
+	// UpdatesUntil makes a one-time licence: it works without end, in every
+	// version released up to this moment (unix seconds). 0 = all versions.
+	UpdatesUntil int64 `json:"upd,omitempty"`
 }
 
 // Errors returned by offline verification.
 var (
-	ErrMalformed   = errors.New("this is not a valid Panelpost license key")
-	ErrSignature   = errors.New("license key signature does not match; the key was changed or issued by someone else")
-	ErrExpired     = errors.New("license key has expired")
-	ErrNoVerifiers = errors.New("this build has no license verification keys; use an official release")
+	ErrMalformed    = errors.New("this is not a valid Panelpost license key")
+	ErrSignature    = errors.New("license key signature does not match; the key was changed or issued by someone else")
+	ErrExpired      = errors.New("license key has expired")
+	ErrNoVerifiers  = errors.New("this build has no license verification keys; use an official release")
+	ErrUpdatesEnded = errors.New("license key does not cover this version")
 )
 
 // GenerateKeyPair creates a new Ed25519 signing key pair, base64 encoded.
@@ -156,6 +172,13 @@ func VerifyOffline(key string, trusted []ed25519.PublicKey, now time.Time) (Lice
 		lic.ExpiresAt = time.Unix(p.ExpiresAt, 0).UTC()
 		if now.After(lic.ExpiresAt) {
 			return lic, ErrExpired
+		}
+	}
+	if p.UpdatesUntil > 0 {
+		lic.UpdatesUntil = time.Unix(p.UpdatesUntil, 0).UTC()
+		if built, ok := ReleaseDate(); ok && built.After(lic.UpdatesUntil) {
+			return lic, fmt.Errorf("%w: it includes versions released until %s, and this version is from %s. Keep using an earlier version, or renew updates",
+				ErrUpdatesEnded, lic.UpdatesUntil.Format("2006-01-02"), built.Format("2006-01-02"))
 		}
 	}
 	return lic, nil

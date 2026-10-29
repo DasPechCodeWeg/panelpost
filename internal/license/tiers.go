@@ -101,6 +101,8 @@ type License struct {
 	Email     string    `json:"email,omitempty"`
 	Source    string    `json:"source,omitempty"` // offline, polar, lemonsqueezy
 	ExpiresAt time.Time `json:"expires_at,omitempty"`
+	// UpdatesUntil is the last release date a one-time licence covers.
+	UpdatesUntil time.Time `json:"updates_until,omitempty"`
 	// ValidatedAt is the last successful online validation.
 	ValidatedAt time.Time `json:"validated_at,omitempty"`
 	// Problem explains why a key is not (or no longer) effective.

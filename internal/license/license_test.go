@@ -268,3 +268,56 @@ func TestManagerOfflineKey(t *testing.T) {
 		t.Error("masked key leaks or is wrong")
 	}
 }
+
+func TestOneTimeKeyCoversReleasesUntilItsDate(t *testing.T) {
+	pub, priv := keypair(t)
+	defer func(old string) { releaseDate = old }(releaseDate)
+	until := time.Date(2027, 10, 29, 23, 59, 59, 0, time.UTC)
+	key, err := Sign(priv, Payload{Tier: Pro, Name: "Initech", UpdatesUntil: until.Unix()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	trusted := []ed25519.PublicKey{pub}
+	// Years later, a release from within the update period still works.
+	later := time.Date(2031, 1, 1, 0, 0, 0, 0, time.UTC)
+	for _, built := range []string{"2026-10-29", "2027-10-29"} {
+		releaseDate = built
+		lic, err := VerifyOffline(key, trusted, later)
+		if err != nil {
+			t.Fatalf("release %s: %v", built, err)
+		}
+		if lic.Tier != Pro || !lic.UpdatesUntil.Equal(until) {
+			t.Fatalf("release %s: license = %+v", built, lic)
+		}
+	}
+	releaseDate = "2027-10-30"
+	_, err = VerifyOffline(key, trusted, later)
+	if !errors.Is(err, ErrUpdatesEnded) || !strings.Contains(err.Error(), "2027-10-29") {
+		t.Fatalf("newer release error = %v", err)
+	}
+	// Builds without a date, from source, don't enforce it.
+	releaseDate = ""
+	if _, err := VerifyOffline(key, trusted, later); err != nil {
+		t.Fatalf("undated build: %v", err)
+	}
+}
+
+func TestManagerFallsBackWhenUpdatesEnded(t *testing.T) {
+	pub, priv := keypair(t)
+	defer func(old string) { releaseDate = old }(releaseDate)
+	releaseDate = "2026-10-29"
+	key, _ := Sign(priv, Payload{Tier: Business, Name: "Globex",
+		UpdatesUntil: time.Date(2027, 1, 31, 23, 59, 59, 0, time.UTC).Unix()})
+	settings := newMem()
+	opts := Options{Settings: settings, PublicKeys: []ed25519.PublicKey{pub}}
+	m := NewManager(opts)
+	if _, err := m.Apply(context.Background(), key); err != nil {
+		t.Fatal(err)
+	}
+	// The same installation upgraded to a release after the update period.
+	releaseDate = "2027-02-01"
+	got := NewManager(opts).Current()
+	if got.Tier != Free || !strings.Contains(got.Problem, "earlier version") {
+		t.Fatalf("after upgrade = %+v", got)
+	}
+}

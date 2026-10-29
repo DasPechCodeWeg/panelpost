@@ -8,8 +8,9 @@ RUN go mod download
 COPY . .
 ARG TARGETOS TARGETARCH
 ARG VERSION=dev
+ARG RELEASE_DATE=""
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath \
-      -ldflags "-s -w -X main.version=${VERSION}" \
+      -ldflags "-s -w -X main.version=${VERSION} -X github.com/DasPechCodeWeg/panelpost/internal/license.releaseDate=${RELEASE_DATE}" \
       -o /out/panelpost ./cmd/panelpost
 
 # ---- runtime ----------------------------------------------------------------
