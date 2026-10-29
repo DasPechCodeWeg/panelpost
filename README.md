@@ -20,8 +20,10 @@ your data anywhere else.
 <p align="center"><a href="docs/sample-report.pdf">Open a sample report (PDF)</a></p>
 
 Grafana only includes reporting in Enterprise and paid Grafana Cloud plans.
-Panelpost gives Grafana OSS users the same result in minutes, at a
-fraction of the cost.
+Panelpost is for teams that keep Grafana on their own servers: it adds
+scheduled, emailed reports to Grafana OSS without moving to the cloud or
+signing an Enterprise contract. [How it compares](#how-it-compares) lists the
+alternatives, including the free ones.
 
 ## Why teams use it
 
@@ -102,7 +104,8 @@ docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/out" \
 
 | | Community | Pro | Business |
 |---|:---:|:---:|:---:|
-| Price | Free | €29/month or €290/year | €79/month or €790/year |
+| Pay once | | €390 | €990 |
+| Or subscribe | | €29/month or €290/year | €79/month or €790/year |
 | Scheduled reports | 3 | Unlimited | Unlimited |
 | Grafana connections | 1 | 3 | Unlimited |
 | Email, drop folder, all layouts and periods | ✓ | ✓ | ✓ |
@@ -113,10 +116,18 @@ docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/out" \
 | Run history | 14 days | 1 year | 2 years |
 | Support | Community | Email | Priority |
 
+**Pay once** if you'd rather not rent software that runs on your own
+servers. You keep using it forever, and every version released in the 12
+months after you buy is included. After that, keep the version you have, or
+renew updates when you want a newer one. Pin the image to a version tag (for
+example `ghcr.io/daspechcodeweg/panelpost:v0.2.0`) rather than `:latest`, so an
+automatic update can't move you past your update period. **Subscriptions**
+include every update for as long as they run.
+
 Prices exclude VAT and cover one installation. Licenses are activated in
 *Settings → License*, and work offline, including in air-gapped networks.
-Paid plans are not on sale yet. During the pilot, testers get a free
-Business licence.
+Paid plans are not on sale yet, and these prices may change with what pilot
+testers tell us. During the pilot, testers get a free Business licence.
 
 ## Pilot program
 
@@ -138,14 +149,23 @@ hostnames or screenshots of real data.
 
 ## How it compares
 
-| | Panelpost | Grafana Enterprise reporting | Other reporting add-ons | DIY scripts |
-|---|---|---|---|---|
-| Works with Grafana OSS | ✓ | Needs an Enterprise licence | ✓ | ✓ |
-| Price | From €0, Pro €290/year | Enterprise contract | ~$1,500+/year or quote | Your time |
-| Calendar periods with time zones | ✓ | ✓ | Varies | Hand-written |
-| Per-client bursting | ✓ | Limited | Varies | Hand-written |
-| Needs the image renderer plugin | No | Yes | Often | Usually |
-| Self-hosted and air-gap friendly | ✓ | ✓ | Varies | ✓ |
+| | Panelpost | Grafana Cloud | Grafana Enterprise | Free reporter plugin | Other reporting add-ons |
+|---|---|---|---|---|---|
+| Works with self-hosted Grafana OSS | ✓ | No, dashboards move to Grafana Cloud | Needs an Enterprise licence | ✓ | ✓ |
+| Price | From €0, Pro €390 once or €290/year | Pro from $19/month plus usage | Enterprise contract | Free | ~$1,500+/year or quote |
+| Schedule and email built in | ✓ | ✓ | ✓ | No, add cron and a mail script | ✓ |
+| Calendar periods with time zones | ✓ | ✓ | ✓ | Via the time range in the URL | Varies |
+| Per-client bursting | ✓ | Limited | Limited | One scripted request per client | Varies |
+| Needs the image renderer plugin | No | No, it's managed | Yes | Yes | Often |
+| Self-hosted and air-gap friendly | ✓ | No | ✓ | ✓ | Varies |
+
+If your dashboards can move to Grafana Cloud, its Pro plan includes reporting
+and starts lower than Panelpost Pro. If you only need a PDF now and then, or
+you're happy to script the schedule and email yourself, the free
+[Dashboard Reporter plugin](https://github.com/mahendrapaipuri/grafana-dashboard-reporter-app)
+is a good choice. Panelpost is for Grafana that stays on your own servers,
+with reports that are scheduled, branded and delivered without scripts to
+maintain.
 
 ## Configuration
 
@@ -200,10 +220,11 @@ see `.github/workflows/ci.yml` and `scripts/it-setup.py`.
 
 ## License
 
-Panelpost is source-available under the [Elastic License 2.0](LICENSE). You
-may use it, including commercially, within the limits of your edition. You
-may not offer it as a hosted service, or remove or circumvent its license-key
-checks. The report typeface is Inter, under the SIL Open Font License.
+Panelpost is source-available under the [Elastic License 2.0](LICENSE). That
+is not an open-source licence. You may read the code and use it, including
+commercially, within the limits of your edition. You may not offer it as a
+hosted service, or remove or circumvent its license-key checks. The report
+typeface is Inter, under the SIL Open Font License.
 
 Grafana is a trademark of Raintank, Inc., dba Grafana Labs. Panelpost is
 independent software and is not affiliated with or endorsed by Grafana Labs.

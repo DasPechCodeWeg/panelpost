@@ -225,8 +225,8 @@ type tierInfo struct {
 func (s *Server) settingsLicense(w http.ResponseWriter, r *http.Request) {
 	tiers := []tierInfo{
 		{license.Free, "Free", license.LimitsFor(license.Free)},
-		{license.Pro, "€29 / month or €290 / year", license.LimitsFor(license.Pro)},
-		{license.Business, "€79 / month or €790 / year", license.LimitsFor(license.Business)},
+		{license.Pro, "€390 once, or €29 / month", license.LimitsFor(license.Pro)},
+		{license.Business, "€990 once, or €79 / month", license.LimitsFor(license.Business)},
 	}
 	s.render(w, r, "settings_license", "License", "settings", map[string]any{
 		"L": s.License.Current(), "Masked": s.License.MaskedKey(), "Tiers": tiers, "Tab": "license",
