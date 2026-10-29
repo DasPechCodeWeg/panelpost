@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -238,4 +239,35 @@ func (s *Server) uiSchedule(w http.ResponseWriter, r *http.Request) {
 		out = append(out, t.In(loc).Format("Mon 2 Jan 2006 15:04 MST"))
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"describe": spec.Describe(), "next": out})
+}
+
+// ConnectionFromEnv creates or updates the connection to rawURL, for
+// deployments that configure Grafana through environment variables. An
+// existing connection to the same URL gets the new token; a new one is
+// named after the host, within the edition's connection limit.
+func (s *Server) ConnectionFromEnv(rawURL, token string) (created bool, err error) {
+	c := &model.Connection{URL: rawURL, Token: token}
+	if u, perr := url.Parse(strings.TrimSpace(rawURL)); perr == nil {
+		c.Name = u.Hostname()
+	}
+	if err := c.Validate(); err != nil {
+		return false, err
+	}
+	conns, err := s.Store.ListConnections()
+	if err != nil {
+		return false, err
+	}
+	for _, existing := range conns {
+		if existing.URL == c.URL {
+			if existing.Token == c.Token {
+				return false, nil
+			}
+			existing.Token = c.Token
+			return false, s.Store.SaveConnection(existing)
+		}
+	}
+	if max := s.License.Current().Limits().MaxConnections; max > 0 && len(conns) >= max {
+		return false, fmt.Errorf("this edition includes %d Grafana connection(s), and %d already exist", max, len(conns))
+	}
+	return true, s.Store.SaveConnection(c)
 }

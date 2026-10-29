@@ -1,0 +1,54 @@
+# Try Panelpost without your own Grafana:
+#   docker compose up -d
+# then open http://localhost:8080 (password: panelpost-demo) and http://localhost:8025
+# for the emails. See README.md in this folder.
+services:
+  grafana:
+    image: grafana/grafana:13.2.2
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_DEFAULT_THEME: light
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/datasources:ro
+      - ./grafana:/etc/grafana/provisioning/dashboards:ro
+      - ../demo-dashboard.json:/var/lib/grafana/dashboards/demo-dashboard.json:ro
+    ports: ["3000:3000"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 3s
+      retries: 40
+
+  # Creates a Viewer service account in the demo Grafana and hands its token
+  # to Panelpost. With your own Grafana you create one in its UI instead.
+  token:
+    image: curlimages/curl:8.17.0
+    user: "0"  # to write to the shared volume
+    depends_on:
+      grafana: {condition: service_healthy}
+    volumes:
+      - ./token.sh:/token.sh:ro
+      - token:/token
+    entrypoint: ["sh", "/token.sh"]
+
+  panelpost:
+    image: ghcr.io/daspechcodeweg/panelpost:latest
+    depends_on:
+      token: {condition: service_completed_successfully}
+    environment:
+      PANELPOST_ADMIN_PASSWORD: panelpost-demo
+      PANELPOST_GRAFANA_URL: http://grafana:3000
+      PANELPOST_GRAFANA_TOKEN_FILE: /token/grafana
+      TZ: Europe/Amsterdam
+    volumes:
+      - token:/token:ro
+      - panelpost-data:/data
+    ports: ["8080:8080"]
+
+  # Catches every email Panelpost sends: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports: ["8025:8025"]
+
+volumes:
+  token:
+  panelpost-data:

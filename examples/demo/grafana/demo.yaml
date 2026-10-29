@@ -1,0 +1,13 @@
+# Provisioning for the demo Grafana: Grafana's built-in TestData source and
+# the "Monthly service report" dashboard.
+apiVersion: 1
+datasources:
+  - name: TestData
+    type: grafana-testdata-datasource
+    uid: testdata
+    isDefault: true
+providers:
+  - name: demo
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

@@ -93,6 +93,12 @@ volumes:
   panelpost-data:
 ```
 
+### Try it with a demo Grafana
+
+No Grafana at hand? [`examples/demo`](examples/demo) starts a Grafana 13
+with a sample dashboard, Panelpost already connected to it, and a mail
+catcher, with one `docker compose up -d`.
+
 ### Try it without a server
 
 The same engine is available as a one-off command:
@@ -185,6 +191,9 @@ deployment concerns.
 | `PANELPOST_DATA` | `/data` | Database, PDFs, logos and the encryption key |
 | `PANELPOST_ADMIN_PASSWORD` | | Sets or resets the admin password at start-up |
 | `PANELPOST_SECRET_KEY` | generated | Key that encrypts stored tokens and passwords |
+| `PANELPOST_GRAFANA_URL` | | Adds (or updates) a Grafana connection at start-up, for automated deployments |
+| `PANELPOST_GRAFANA_TOKEN` | | Service account token for that connection |
+| `PANELPOST_GRAFANA_TOKEN_FILE` | | Read the token from a file instead, such as a Docker or Kubernetes secret |
 | `PANELPOST_WORKERS` | `1` | Reports rendered in parallel |
 | `PANELPOST_CHROME_PATH` | auto | Chromium binary (bundled in the image) |
 | `PANELPOST_LOG_FORMAT` | `text` | `text` or `json` |

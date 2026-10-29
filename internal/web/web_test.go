@@ -312,3 +312,29 @@ func TestSafeNext(t *testing.T) {
 		}
 	}
 }
+
+func TestConnectionFromEnv(t *testing.T) {
+	h := newHarness(t)
+	created, err := h.srv.ConnectionFromEnv("http://grafana:3000/", "glsa_one")
+	if err != nil || !created {
+		t.Fatalf("first call: created=%v err=%v", created, err)
+	}
+	// A restart with a rotated token updates the same connection.
+	if created, err = h.srv.ConnectionFromEnv("http://grafana:3000", "glsa_two"); err != nil || created {
+		t.Fatalf("second call: created=%v err=%v", created, err)
+	}
+	conns, _ := h.store.ListConnections()
+	if len(conns) != 1 || conns[0].Name != "grafana" || conns[0].Token != "glsa_two" {
+		t.Fatalf("connections = %+v", conns)
+	}
+	// The Community edition allows one connection.
+	if _, err := h.srv.ConnectionFromEnv("https://other.example", "t"); err == nil {
+		t.Error("second connection allowed on the Community edition")
+	}
+	if _, err := h.srv.ConnectionFromEnv("grafana:3000", "t"); err == nil {
+		t.Error("URL without a scheme accepted")
+	}
+	if _, err := h.srv.ConnectionFromEnv("http://grafana:3000", ""); err == nil {
+		t.Error("empty token accepted")
+	}
+}

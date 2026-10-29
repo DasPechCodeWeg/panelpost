@@ -169,6 +169,23 @@ func serve(args []string) error {
 		}
 		log.Info("admin password set from PANELPOST_ADMIN_PASSWORD")
 	}
+	if raw := env("PANELPOST_GRAFANA_URL", ""); raw != "" {
+		token := env("PANELPOST_GRAFANA_TOKEN", "")
+		if file := env("PANELPOST_GRAFANA_TOKEN_FILE", ""); file != "" {
+			b, err := os.ReadFile(file)
+			if err != nil {
+				return fmt.Errorf("PANELPOST_GRAFANA_TOKEN_FILE: %w", err)
+			}
+			token = strings.TrimSpace(string(b))
+		}
+		created, err := srv.ConnectionFromEnv(raw, token)
+		switch {
+		case err != nil:
+			log.Warn("could not set up the Grafana connection from PANELPOST_GRAFANA_URL", "err", err)
+		case created:
+			log.Info("Grafana connection added from PANELPOST_GRAFANA_URL", "url", raw)
+		}
+	}
 	if !srv.HasPassword() {
 		srv.SetupToken = setupCode()
 		log.Info("first start: open the web UI and enter this setup code to create the admin password",
