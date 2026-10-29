@@ -19,7 +19,8 @@ your data anywhere else.
 </p>
 <p align="center"><a href="docs/sample-report.pdf">Open a sample report (PDF)</a></p>
 
-Grafana only includes reporting in Enterprise and paid Grafana Cloud plans.
+Self-hosted Grafana only includes reporting in Enterprise. Grafana Cloud
+includes it too, but your dashboards then live in Grafana's cloud.
 Panelpost is for teams that keep Grafana on their own servers: it adds
 scheduled, emailed reports to Grafana OSS without moving to the cloud or
 signing an Enterprise contract. [How it compares](#how-it-compares) lists the
@@ -38,9 +39,12 @@ alternatives, including the free ones.
   recipients. Built for MSPs, agencies and internal platform teams.
 - **Delivery that fits in.** SMTP email with the PDF attached, signed
   webhooks, a drop folder for archiving, and a REST API.
-- **Nothing extra to install.** Chromium is inside the container. You don't
-  need the Grafana image renderer plugin, and Grafana itself is left
-  unchanged.
+- **Nothing extra to install.** Chromium is inside the container. Grafana 13
+  removed the image renderer plugin, so screenshots and reports in Grafana
+  now need a separate renderer service, which Grafana suggests giving
+  16 GiB of memory and 4 CPU cores
+  ([docs](https://grafana.com/docs/grafana/latest/setup-grafana/image-rendering/)).
+  Panelpost needs neither, and Grafana itself is left unchanged.
 - **Private by design.** Self-hosted, works in air-gapped networks,
   credentials encrypted at rest, and the token is only ever sent to your
   Grafana.
@@ -152,15 +156,16 @@ hostnames or screenshots of real data.
 | | Panelpost | Grafana Cloud | Grafana Enterprise | Free reporter plugin | Other reporting add-ons |
 |---|---|---|---|---|---|
 | Works with self-hosted Grafana OSS | ✓ | No, dashboards move to Grafana Cloud | Needs an Enterprise licence | ✓ | ✓ |
-| Price | From €0, Pro €390 once or €290/year | Pro from $19/month plus usage | Enterprise contract | Free | ~$1,500+/year or quote |
+| Price | From €0, Pro €390 once or €290/year | Included from the Free tier; Pro from $19/month plus usage | Enterprise contract | Free | ~$1,500+/year or quote |
 | Schedule and email built in | ✓ | ✓ | ✓ | No, add cron and a mail script | ✓ |
 | Calendar periods with time zones | ✓ | ✓ | ✓ | Via the time range in the URL | Varies |
 | Per-client bursting | ✓ | Limited | Limited | One scripted request per client | Varies |
-| Needs the image renderer plugin | No | No, it's managed | Yes | Yes | Often |
+| Needs Grafana's image renderer | No | No, it's managed | Yes, as a separate service | Yes, plus a Chromium for the PDF | Often |
 | Self-hosted and air-gap friendly | ✓ | No | ✓ | ✓ | Varies |
 
-If your dashboards can move to Grafana Cloud, its Pro plan includes reporting
-and starts lower than Panelpost Pro. If you only need a PDF now and then, or
+If your dashboards can move to Grafana Cloud, use its reporting: it's
+included even in the Free tier
+([plans](https://grafana.com/docs/grafana-cloud/cost-management-and-billing/understand-grafana-cloud-features/)). If you only need a PDF now and then, or
 you're happy to script the schedule and email yourself, the free
 [Dashboard Reporter plugin](https://github.com/mahendrapaipuri/grafana-dashboard-reporter-app)
 is a good choice. Panelpost is for Grafana that stays on your own servers,
